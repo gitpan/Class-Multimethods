@@ -1,18 +1,19 @@
-#! /usr/local/bin/perl -w
+use strict;
+use 5.005;
 
 use Class::Multimethods;
 
-multimethod stringify => (ARRAY) => sub
+multimethod stringify => ('ARRAY') => sub
 {
 	'[' . join(",", map { stringify($_) } @{$_[0]}) . ']';
 };
 
-multimethod stringify => (HASH) => sub
+multimethod stringify => ('HASH') => sub
 {
 	'{' . join(",", map { "$_=>".stringify($_[0]->{$_}) } keys %{$_[0]}) . '}';
 };
 
-multimethod stringify => (CODE) => sub { 'sub {...}'; };
+multimethod stringify => ('CODE') => sub { 'sub {...}'; };
 multimethod stringify => ('#') => sub { "+$_[0]"; };
 multimethod stringify => ('$') => sub { "'$_[0]'"; };
 

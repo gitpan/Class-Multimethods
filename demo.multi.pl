@@ -1,3 +1,5 @@
+use 5.005;
+
 # SET UP A WINDOW HIERARCHY
 
 	package Window;

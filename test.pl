@@ -1,3 +1,4 @@
+use 5.005;
 use strict;
 
 # SAMPLE HIERARCHY TO TEST...
@@ -24,6 +25,7 @@ use strict;
 
 	BEGIN { $| = 1; print "1..350\n"; }
 	END {print "not ok 1\n" unless $::loaded;}
+
 	use Class::Multimethods;
 	$::loaded = 1;
 	print "ok 1\n";

@@ -6,12 +6,14 @@ use Carp;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw( multimethod );
-$VERSION = '1.00';
+@EXPORT = qw( multimethod resolve_ambiguous resolve_no_match );
+$VERSION = '1.10';
 
-my %dispatch = ();	# THE DISPATCH TABLE
-my %cached   = ();	# THE CACHE OF PREVIOUS RESOLUTIONS OF EMPTY SLOTS
-my %hasgeneric  = ();	# WHETHER A GIVEN MULTIMETHOD HAS ANY GENERIC VARIANTS
+my %dispatch = ();	     # THE DISPATCH TABLE
+my %cached   = ();	     # THE CACHE OF PREVIOUS RESOLUTIONS OF EMPTY SLOTS
+my %hasgeneric  = ();	     # WHETHER A GIVEN MULTIMETHOD HAS ANY GENERIC VARIANTS
+my %ambiguous_handler = ();  # HANDLERS FOR AMBIGUOUS CALLS
+my %no_match_handler = ();   # HANDLERS FOR AMBIGUOUS CALLS
 
 
 # THIS IS INTERPOSED BETWEEN THE CALLING PACKAGE AND Exporter TO SUPPORT THE
@@ -21,7 +23,7 @@ sub import
 {
 	my $package = (caller)[0];
 	install_dispatch($package,pop @_) while $#_;
-	Class::Multimethods->export_to_level(1,@_);
+	Class::Multimethods->export_to_level(1);
 }
 
 
@@ -34,6 +36,25 @@ sub install_dispatch
 		unless eval "defined \&${pkg}::$name";
 }
 
+# REGISTER RESOLUTION FUNCTIONS FOR AMBIGUOUS AND NO-MATCH CALLS
+
+sub resolve_ambiguous
+{
+	my $name = shift;
+	if (@_ == 1 && ref($_[0]) eq 'CODE')
+		{ $ambiguous_handler{$name} = $_[0] }
+	else
+		{ $ambiguous_handler{$name} = join ',', @_ }
+}
+
+sub resolve_no_match
+{
+	my $name = shift;
+	if (@_ == 1 && ref($_[0]) eq 'CODE')
+		{ $no_match_handler{$name} = $_[0] }
+	else
+		{ $no_match_handler{$name} = join ',', @_ }
+}
 
 # SQUIRREL AWAY THE PROFFERED SUB REF INDEXED BY THE MULTIMETHOD NAME
 # AND THE TYPE NAMES SUPPLIED. CAN ALSO BE USED WITH JUST THE MULTIMETHOD
@@ -124,22 +145,38 @@ sub dispatch   # ($multimethod_name, @actual_args)
 	{
 		$cached{$name}{$sig}{'&'} = $code[0];
 		# print "caching {$name}{$sig}{'&'}\n";
-		$code[0]->(@_);
+		return $code[0]->(@_);
 	}
 
 # TWO OR MORE EQUALLY LIKELY CANDIDATES IS AMBIGUOUS...
 	elsif ( @code > 1)
 	{
+		my $handler = $ambiguous_handler{$name};
+		if (defined $handler)
+		{
+			return $handler->(@_)
+				if ref $handler;
+			return $dispatch{$name}{$handler}{'&'}->(@_)
+				if defined $dispatch{$name}{$handler};
+		}
 		croak "Cannot resolve call to multimethod $name($sig). " .
 		      "The multimethods:\n" .
-		      	join("\n",
+			join("\n",
 			 map { "\t$name(" . join(',',@$_) . ")" } @candidates) .
-		        "\nare equally viable";
+			"\nare equally viable";
 	}
 
 # IF *NO* CANDIDATE, NO WAY TO DISPATCH THE CALL
 	else
 	{
+		my $handler = $no_match_handler{$name};
+		if (defined $handler)
+		{
+			return $handler->(@_)
+				if ref $handler;
+			return $dispatch{$name}{$handler}{'&'}->(@_)
+				if defined $dispatch{$name}{$handler};
+		}
 		croak "No viable candidate for call to multimethod $name($sig)";
 	}
 }

@@ -4,8 +4,8 @@ Class::Multimethods - Support multimethods and function overloading in Perl
 
 =head1 VERSION
 
-This document describes version 1.00 of Class::Multimethods,
-released February 17, 1999.
+This document describes version 1.10 of Class::Multimethods,
+released February 19, 1999.
 
 =head1 SYNOPSIS
 
@@ -79,9 +79,10 @@ released February 17, 1999.
 
 =head1 DESCRIPTION
 
-The Class:Multimethod module exports a single subroutine that can be
-used to declare other subroutines that are dispatched using a algorithm
-different from the normal Perl subroutine or method dispatch mechanism.
+The Class:Multimethod module exports a subroutine (&multimethod)
+that can be used to declare other subroutines that are dispatched
+using a algorithm different from the normal Perl subroutine or
+method dispatch mechanism.
 
 Normal Perl subroutines are dispatched by finding the
 appropriately-named subroutine in the current (or specified) package
@@ -105,7 +106,7 @@ method, not just the first.
 
 =head2 Defining multimethods
 
-The Class::Multimethods module exports a single subroutine,
+The Class::Multimethods module exports a subroutine called
 C<multimethod>, which can be used to specify multimethod variants with
 the dispatch behaviour described above. The C<multimethod> subroutine
 takes the name of the desired multimethod, a list of class names, and a
@@ -128,7 +129,7 @@ For example, the declaration:
 	multimethod divide => (LargeInt, LargeFloat) => sub
 	{
 		LargeFloat::divide($_[0]->AsLargeFloat(),$_[1]));
-	}
+	};
 
 creates a (single!) multimethod C<&LargeNumeric::divide> with two variants.
 If the multimethod is called with two references to C<LargeInt> objects
@@ -136,13 +137,59 @@ as arguments, the first variant (i.e. anonymous subroutine) is invoked. If the
 multimethod is called with a C<LargeInt> reference and a C<LargeFloat>
 reference, the second variant is called.
 
+Note that if you're running under C<use strict>, the list of bareword
+class names in each variant definition will cause problems.
+In that case you'll need to say:
+
+	multimethod divide => ('LargeInt', 'LargeInt') => sub
+	{
+		LargeInt::divide($_[0],$_[1]);
+	};
+
+	multimethod divide => ('LargeInt', 'LargeFloat') => sub
+	{
+		LargeFloat::divide($_[0]->AsLargeFloat(),$_[1]));
+	};
+
+
+or better still:
+
+	multimethod divide => qw( LargeInt LargeInt ) => sub
+	{
+		LargeInt::divide($_[0],$_[1]);
+	};
+
+	multimethod divide => qw( LargeInt LargeFloat ) => sub
+	{
+		LargeFloat::divide($_[0]->AsLargeFloat(),$_[1]));
+	};
+
+or best of all (;-):
+
+	{
+	    no strict;
+	
+	    multimethod divide => (LargeInt, LargeInt) => sub
+	    {
+		LargeInt::divide($_[0],$_[1]);
+	    };
+
+	    multimethod divide => (LargeInt, LargeFloat) => sub
+	    {
+		LargeFloat::divide($_[0]->AsLargeFloat(),$_[1]));
+	    };
+	}
+
+
 Calling the multimethod with any other combination of C<LargeNumeric>
 reference arguments (e.g. a reference to a C<LargeFloat> and a
 reference to a C<LargeInt>, or two C<LargeFloat> referencess) results
-in an exception being thrown, with the message: C<"No viable candidate
-for call to multimethod LargeNumeric::divide at I<linenumber>">.
+in an exception being thrown, with the message:
 
-Alternatively, we could provide a "catch-all" variant:
+	No viable candidate for call to
+	multimethod LargeNumeric::divide at ...
+
+To avoid this, we could provide a "catch-all" variant:
 
 	multimethod divide => (LargeNumeric, LargeNumeric) => sub
 	{
@@ -414,7 +461,118 @@ For example:
 		=> sub { ... }
 
 
-	
+=head2 Resolving ambiguities and non-dispatchable calls
+
+It's relatively easy to set up a multimethod such that particular
+combinations of argument types cannot be correctly dispatched. For
+example, consider the following variants of a multimethod called
+C<put_peg>:
+
+	multimethod put_peg => (RoundPeg,Hole) => sub
+	{
+		print "a round peg in any old hole\n";
+	};
+
+	multimethod put_peg => (Peg,SquareHole) => sub
+	{
+		print "any old peg in a square hole\n";
+	};
+
+	multimethod put_peg => (Peg,Hole) => sub
+	{
+		print "any old peg in any old hole\n";
+	};
+
+If C<put_peg> is called like so:
+
+	put_peg( RoundPeg->new(), SquareHole->new() );
+
+then Class::Multimethods can't dispatch the call, because it cannot
+decide between the C<(RoundPeg,Hole)> and C<(Peg,SquareHole)> variants,
+each of which is the same "distance" (i.e. 1 derivation) from the actual
+arguments.
+
+The default behaviour is to throw an exception (i.e. die) like this:
+
+	Cannot resolve call to multimethod put_peg(RoundPeg,SquareHole).
+	The multimethods:
+		put_peg(RoundPeg,Hole)
+		put_peg(Peg,SquareHole)
+	are equally viable at ...
+
+Sometimes, however, the more specialized variants are only
+optimizations, and a more general case (e.g. the C<(Peg,Hole)> variant)
+would suffice as a default where such an ambiguity exists. If that is
+the case, it's possible to tell Class::Multimethods to resolve the
+ambiguity by calling that variant, using the C<resolve_ambiguous>
+subroutine. C<resolve_ambiguous> is automatically exported by
+Class::Multimethods and is used like this:
+
+	resolve_ambiguous put_peg => (Peg,Hole);
+
+That is, you specify the name of the multimethod being disambiguated, and the
+signature of the variant to be used in ambiguous cases. Of course, the specified
+variant must actually exist at the time of the call. If it doesn't,
+Class::Multimethod ignores it and throws the usual exception.
+
+Alternatively, if no variant is suitable as a default, you can register a reference to a
+subroutine that is to be called instead:
+
+	resolve_ambiguous put_peg => \&disambiguator;
+
+Now, whenever C<put_peg> can't dispatch a call because it's ambiguous, 
+C<disambiguator> will be called instead, with the
+same argument list as C<put_peg> was given.
+
+Of course, C<resolve_ambiguous> doesn't care what subroutine it's given a 
+reference to, so you can also use an anonymous subroutine:
+
+	resolve_ambiguous put_peg
+		=> sub
+		   {
+			print "can't put a ", ref($_[0]),
+			      " into a ", ref($_[1]), "\n";
+		   };
+
+
+Dispatch can also fail if there are I<no> suitable variants available
+to handle a particular call. For example:
+
+	put_peg( JPEG->new(), Loophole->new() );
+
+which would normally produce the exception:
+
+	No viable candidate for call to
+	multimethod put_peg(JPeg,Loophole) at ...
+
+since classes JPEG and Loophole are't in the Peg and Hole hierarchies, so
+there's no inheritance path back to a more general variant.
+
+To handle cases like this, you can use the <resolve_no_match> subroutine,
+which is also exported from Class::Multimethods. C<resolve_no_match>
+registers a multimethod variant, or a reference to some other subroutine, 
+that is then used whenever the dispatch mechanism can't find a suitable
+variant for a given multimethod call.
+
+For example:
+
+	resolve_no_match put_peg
+		=> sub
+		   {
+			put_jpeg(@_)
+				if ref($_[0]) eq 'JPEG';
+			shift()->hang(@_)
+				if ref($_[0]) eq 'ClothesPeg';
+			hammer(@_)
+				if ref($_[0]) eq 'TentPeg';
+			# etc.
+				
+		   };
+
+As with C<resolve_ambiguous> the registered variant or subroutine
+is called with the same set of arguments that were passed to
+the original multimethod call.
+
 
 =head1 DIAGNOSTICS
 
@@ -451,6 +609,11 @@ Bug reports and other feedback are most welcome.
 Ongoing annoyances include:
 
 =over 4
+
+=item *
+
+The module uses qr// constructs to improve performance. Hence it won't
+run under Perls earlier than 5.005.
 
 =item *
 

@@ -6,3 +6,22 @@ Revision history for Perl extension Class::Multimethods.
 1.00	Wed Feb 17 09:28:29 1999
 
 	- Now supports '#', '$', and '*' pseudo-types in parameter lists
+
+
+1.10	Fri Feb 19 11:55:37 1999
+
+	- Fixed a nasty bug in the import method (thanks Larry)
+
+	- Added constraints to indicate that the module
+	  doesn't run on Perls earlier than 5.005
+
+	- Added &resolve_ambiguous to allow handlers to be
+	  registered for multimethod calls which could be
+	  equally well be disptched to two or more variants
+
+	- Added &resolve_no_match to allow handlers to be
+	  registered for multimethod calls which cannot be
+	  dispatched to any variant.
+
+	- Documented the syntactic vinegar needed to run under
+	  'use string'

@@ -5,6 +5,7 @@ Makefile.PL
 /lib/Class/Multimethods.pm
 /doc/Class/Multimethods.pod
 test.pl
+demo.ambig.pl
 demo.dump.pl
 demo.global.pl
 demo.multi.pl
