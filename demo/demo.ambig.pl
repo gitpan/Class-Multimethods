@@ -21,12 +21,12 @@ multimethod put => (Peg,Hole) => sub
 };
 
 
-resolve_ambiguous put
-	=> sub
- 	   {
- 		print "can't put a ", ref($_[0]),
- 		      " into a ", ref($_[1]), "\n";
- 	   };
+# resolve_ambiguous put
+# 	=> sub
+ # 	   {
+ # 		print "can't put a ", ref($_[0]),
+ # 		      " into a ", ref($_[1]), "\n";
+ # 	   };
  
 # resolve_no_match put
 #  	=> sub
@@ -58,3 +58,5 @@ eval { put($roundpeg, $hole)       } or print "ERROR: $@\n";
 eval { put($peg, $squarehole)      } or print "ERROR: $@\n";
 eval { put($roundpeg, $squarehole) } or print "ERROR: $@\n";
 eval { put(2,3)                    } or print "ERROR: $@\n";
+
+Class::Multimethods::analyse(put=>[RoundPeg,SquareHole]);

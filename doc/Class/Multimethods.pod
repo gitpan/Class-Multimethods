@@ -4,8 +4,8 @@ Class::Multimethods - Support multimethods and function overloading in Perl
 
 =head1 VERSION
 
-This document describes version 1.10 of Class::Multimethods,
-released February 19, 1999.
+This document describes version 1.69 of Class::Multimethods,
+released September 12, 1999.
 
 =head1 SYNOPSIS
 
@@ -415,8 +415,12 @@ That solves the problem, but not as elegantly as it might. It
 would be better if numeric values were left unquoted. To this end,
 Class::Multimethods offers a second pseudo-type - C<"#"> - which is
 the class it pretends numeric scalar values belong to (where
-"numeric" has the usual Perl meaning: a scalar value C<$s> is numeric
-if C<$s+0 eq $s>).
+a scalar value is "numeric" if it's truly a numerical value (without implicit
+coercions):
+
+	$var = 0	# numeric --> '$'
+	$var = 0.0	# numeric --> '$'
+	$var = "0";	# string  --> '#'
 
 Hence you could now also define:
 
@@ -448,7 +452,7 @@ For example:
 	
 	# Special cases...
 
-	    multimethod handle => (MoveableWindow, MoveEvent, NormalMode)
+	    multimethod handle => (MovableWindow, MoveEvent, NormalMode)
 		=> sub { ... }
 
 	    multimethod handle => (ScalableWindow, ResizeEvent, NormalMode)
@@ -573,6 +577,95 @@ As with C<resolve_ambiguous> the registered variant or subroutine
 is called with the same set of arguments that were passed to
 the original multimethod call.
 
+=head2 Redispatching multimethod calls
+
+Sometimes a polymorphic method in a derived class is used to add
+functionality to an inherited method. For example, a derived class's
+C<print_me> method might call it's base class's C<print_me>, making use
+of Perl's special C<$obj->SUPER::method()> construct:
+
+	class Base;
+
+	sub print_me
+	{	
+		my ($self) = @_;
+		print "Base stuff\n";
+	}
+
+	class Derived; @ISA = qw( Base );
+
+	sub print_me
+	{
+		my ($self) = @_;
+		$self->SUPER::print_me();	# START LOOKING IN ANCESTORS
+		print "Derived stuff\n";
+	}
+
+If the C<print_me> methods are implemented as multimethods, it's still possible
+to reinvoke an "ancestral" method, using the automatically exported
+C<Class::Multimethods::superclass> subroutine:
+
+	use Class::Multimethods;
+
+	multimethod print_me => (Base) => sub
+	{	
+		my ($self) = @_;
+		print "Base stuff\n";
+	}
+
+	multimethod print_me => (Derived) => sub
+	{
+		my ($self) = @_;
+		print_me( superclass($self) );	# START LOOKING IN ANCESTORS
+		print "Derived stuff\n";
+	}
+	}
+
+Applying C<superclass> to the multimethod argument tells Class::Multimethod
+to start looking for parameter types amongst the ancestors of Derived.
+
+It's also possible in regular Perl to explcitly tell the polymorphic dispacther
+where to start looking, by explicitly qualifying the method name:
+
+	sub Derived::print_me
+	{
+		my ($self) = @_;
+		$self->Base::print_me();	# START LOOKING IN Base CLASS
+		print "Derived stuff\n";
+	}
+
+The same is possible with multimethods. C<superclass> takes an optional second
+argument that tells Class::Multimethods exactly where to start looking:
+
+	multimethod print_me => (Derived) => sub
+	{
+		my ($self) = @_;
+		print_me( superclass($self => Base) );	# START LOOKING IN Base
+		print "Derived stuff\n";
+	}
+
+Note that, unlike regular method calls, with multimethods you can apply the
+C<superclass> subroutine to any or all of a multimethod's arguments. For
+example:
+
+	multimethod handle => (MovableWindow, MoveEvent, NormalMode) => sub
+	{
+		my ($w, $e, $m) = @_;
+
+		# Do any special stuff,
+		# then redispatch to more general handler...
+
+		handle(superclass($w), $e, superclass($m => Mode) );
+	}
+
+In this case the redispatch would start looking for variants which matched
+C<(I<any of MovableWindow's ancestors>, MoveEvent, Mode)>.
+
+It's also important to remember that, as with regular methods,
+the class of the actual arguments doesn't change just because we subverted the
+dispatch sequence. That means if the above redispatch called the handle variant
+that takes arguments (Window, MoveEvent, Mode), the actual arguments would
+still be of types (MovableWindow, MoveEvent, NormalMode).
 
 =head1 DIAGNOSTICS
 
@@ -596,6 +689,12 @@ equally "close" to the actual arguments
 		%s
 	 are equally viable at %s"
 
+If you specify two variants with the same parameter lists, Class::Multimethods
+warns:
+
+	"Multimethod %s redefined at %s"
+
+but only if $^W is true (i.e. under the -w flag).
 
 =head1 AUTHOR
 

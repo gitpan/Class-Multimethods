@@ -13,6 +13,12 @@ use 5.005;
 		print "No window operations available in OffMode\n";
 	};
 
+	multimethod handle => (Window, '#', Mode) => sub
+	{};
+
+	multimethod handle => (Window, Command, '*') => sub
+	{};
+
 	multimethod handle => (Window, Command, Mode) => sub
 	{
 		print "Window $_[0]->{id} can't handle a ",
@@ -43,7 +49,12 @@ use 5.005;
 	package MovableWindow;   @ISA = qw( Window );
  	use Class::Multimethods;
 
-	multimethod handle => (MovableWindow, Move, OnMode) => sub
+	multimethod handle => (MovableWindow, Move, Mode) => sub
+	{
+		print "Moving window $_[0]->{id}!\n";
+	};
+
+	multimethod handle => (MovableWindow, ReshapeCommand, OnMode) => sub
 	{
 		print "Moving window $_[0]->{id}!\n";
 	};
@@ -57,6 +68,11 @@ use 5.005;
 	};
 
 	multimethod handle => (ResizableWindow, MoveAndResize, OnMode) => sub
+	{
+		print "Moving and resizing window $_[0]->{id}!\n";
+	};
+
+	multimethod handle => (ResizableWindow, Command) => sub
 	{
 		print "Moving and resizing window $_[0]->{id}!\n";
 	};
@@ -87,47 +103,22 @@ use 5.005;
 	package OffMode;   @ISA = qw( Mode );
 
 
-# SET UP SOME MULTIMETHODS TO HANDLE THE VARIOUS INTERESTING CASES
-
 	package main;
 
+ 	use Class::Multimethods;
 
+	Class::Multimethods::analyse spindle;
 
-# CREATE SOME WINDOWS...
+	Class::Multimethods::analyse handle
+	 	=> [ResizableWindow, Command, OnMode],
+	 	   [MovableWindow, Move, OnMode];
 
-	@window = (
-			new ModalWindow,
-			new MovableWindow,
-			new ResizableWindow,
-		  );
+	Class::Multimethods::analyse handle;
 
-# ...AND SOME COMMANDS...
+# CHECK 100% success
 
-	@command = (
-			new Move,
-			new Resize,
-			new MoveAndResize,
-			new Accept,
-		   );
+	multimethod perfect => ('#') => sub { "number\n" };
+	multimethod perfect => ('$') => sub { "scalar\n" };
 
-# ...AND SOME MODES...
+	Class::Multimethods::analyse perfect;
 
-	@mode = (
-			new OffMode,
-			new ModalMode,
-			new OnMode,
-			new OnMode,
-			new OnMode,
-		   );
-
-# AND INTERACT THEM ALL...
-
-	srand(0);
-	for (1..100)
-	{
-		$w = $window[rand @window];
-		$c = $command[rand @command];
-		$m = $mode[rand @mode];
-		print "handle(",ref($w),",",ref($c),",",ref($m),")...\n\t";
-		eval { $w->handle($c,$m) } or print $@;
-	}

@@ -3,14 +3,63 @@ use 5.005;
 # SET UP A WINDOW HIERARCHY
 
 	package Window;
-		my $id = 1;
-		sub new   { bless { id=>$id++ }, ref($_[0])||$_[0] }
+		my $ids = 1;
+		sub new   { bless { id=>$ids++ }, ref($_[0])||$_[0] }
+
+ 	use Class::Multimethods;
+
+	multimethod handle => (Window, Command, OffMode) => sub
+	{
+		print "No window operations available in OffMode\n";
+	};
+
+	multimethod handle => (Window, Command, Mode) => sub
+	{
+		print "Window $_[0]->{id} can't handle a ",
+			ref($_[1]), " command in ",
+			ref($_[2]), " mode\n";
+	};
+
 
 	package ModalWindow;     @ISA = qw( Window );
+ 	use Class::Multimethods;
+
+	multimethod handle => (ModalWindow, ReshapeCommand, Mode) => sub
+	{
+		print "Modal windows can't handle reshape commands\n";
+	};
+
+	multimethod handle => (ModalWindow, Accept, OffMode) => sub
+	{
+		print "Modal window $_[0]->{id} can't accept in OffMode!\n";
+	};
+
+	multimethod handle => (ModalWindow, Accept, Mode) => sub
+	{
+		print "Modal window $_[0]->{id} accepts!\n";
+	};
+
 
 	package MovableWindow;   @ISA = qw( Window );
+ 	use Class::Multimethods;
+
+	multimethod handle => (MovableWindow, Move, OnMode) => sub
+	{
+		print "Moving window $_[0]->{id}!\n";
+	};
 
 	package ResizableWindow; @ISA = qw( MovableWindow );
+ 	use Class::Multimethods;
+
+	multimethod handle => (ResizableWindow, Resize, OnMode) => sub
+	{
+		print "Resizing window $_[0]->{id}!\n";
+	};
+
+	multimethod handle => (ResizableWindow, MoveAndResize, OnMode) => sub
+	{
+		print "Moving and resizing window $_[0]->{id}!\n";
+	};
 
 
 # SET UP A COMMAND HIERARCHY
@@ -42,55 +91,6 @@ use 5.005;
 
 	package main;
 
- 	use Class::Multimethods;
-
-	# MODAL WINDOWS CAN NEVER BE RESHAPED...
-	multimethod handle => (ModalWindow, ReshapeCommand, Mode) => sub
-	{
-		print "Modal windows can't handle reshape commands\n";
-	};
-
-	# MODAL WINDOW ACCEPT IN ANY MODE...
-	multimethod handle => (ModalWindow, Accept, '*') => sub
-	{
-		print "Modal window $_[0]->{id} accepts!\n";
-	};
-
-	# ...EXCEPT OffMode
-	multimethod handle => (ModalWindow, Accept, OffMode) => sub
-	{
-		print "Modal window $_[0]->{id} can't accept in OffMode!\n";
-	};
-
-	# VARIOUS ACCEPTABLE MOVE AND RESIZE OPTIONS...
-	multimethod handle => (MovableWindow, Move, OnMode) => sub
-	{
-		print "Moving window $_[0]->{id}!\n";
-	};
-
-	multimethod handle => (ResizableWindow, Resize, OnMode) => sub
-	{
-		print "Resizing window $_[0]->{id}!\n";
-	};
-
-	multimethod handle => (ResizableWindow, MoveAndResize, OnMode) => sub
-	{
-		print "Moving and resizing window $_[0]->{id}!\n";
-	};
-
-	# NOTHING IS POSSIBLE IN OffMode
-	multimethod handle => ('*', '*', OffMode) => sub
-	{
-		print "No window operations available in OffMode\n";
-	};
-
-	# CATCH ALL OTHER CASES...
-	multimethod handle => ('*', '*', '*') => sub
-	{
-		print "Window $_[0]->{id} can't handle a ",
-			ref($_[1]), " command in ",
-			ref($_[2]), " mode\n";
-	};
 
 
 # CREATE SOME WINDOWS...
@@ -123,11 +123,11 @@ use 5.005;
 # AND INTERACT THEM ALL...
 
 	srand(0);
-	for (1..100)
+	for (1..100000)
 	{
 		$w = $window[rand @window];
 		$c = $command[rand @command];
 		$m = $mode[rand @mode];
 		print "handle(",ref($w),",",ref($c),",",ref($m),")...\n\t";
-		eval { handle($w,$c,$m) } or print $@;
+		eval { $w->handle($c,$m) } or print $@;
 	}

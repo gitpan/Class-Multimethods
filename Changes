@@ -24,4 +24,26 @@ Revision history for Perl extension Class::Multimethods.
 	  dispatched to any variant.
 
 	- Documented the syntactic vinegar needed to run under
-	  'use string'
+	  'use strict'
+
+
+1.12	Tue Jul  6 17:09:04 1999
+
+	- Removed subroutine call in generated multimethod dispatcher,
+	  made dispatch table a package var, and optimized most common cases.
+	  Produced a 38% improvement in raw dispatch speed (around 22% 
+	  faster dispatch in real applications).
+	
+	- Added &analyse subroutine to assist debugging
+
+	- Moved test.pl to t/multimethods.t
+	  (thanks Lupe)
+
+	- Added superclass method (thanks Gareth)
+
+1.69	Sun Sep 12 07:29:06 1999
+
+	- Fixed absolute path snafu in MANIFEST (thanks Gareth and Michael)
+
+	- moved demos to demo subdirectory
+

@@ -1,5 +1,5 @@
 ==============================================================================
-                Release of version 1.10 of Class::Multimethods
+                Release of version 1.69 of Class::Multimethods
 ==============================================================================
 
 DESCRIPTION
@@ -101,24 +101,13 @@ COPYRIGHT
 
 ==============================================================================
 
-CHANGES IN VERSION 1.10
+CHANGES IN VERSION 1.69
 
 
-	- Fixed a nasty bug in the import method (thanks Larry)
+	- Fixed absolute path snafu in MANIFEST (thanks Gareth and Michael)
 
-	- Added constraints to indicate that the module
-	  doesn't run on Perls earlier than 5.005
+	- moved demos to demo subdirectory
 
-	- Added &resolve_ambiguous to allow handlers to be
-	  registered for multimethod calls which could be
-	  equally well be disptched to two or more variants
-
-	- Added &resolve_no_match to allow handlers to be
-	  registered for multimethod calls which cannot be
-	  dispatched to any variant.
-
-	- Documented the syntactic vinegar needed to run under
-	  'use string'
 
 
 ==============================================================================
