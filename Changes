@@ -1,0 +1,8 @@
+Revision history for Perl extension Class::Multimethods.
+
+0.01  Tue Oct 27 13:33:29 1998
+	- original version; created by h2xs 1.18
+
+1.00	Wed Feb 17 09:28:29 1999
+
+	- Now supports '#', '$', and '*' pseudo-types in parameter lists
