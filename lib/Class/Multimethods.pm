@@ -8,7 +8,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw( multimethod resolve_ambiguous resolve_no_match superclass
 	      multimethod_wrapper );
-$VERSION = '1.69';
+$VERSION = '1.70';
 
 use vars qw(%dispatch %cached %hasgeneric
 	    %ambiguous_handler %no_match_handler

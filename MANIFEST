@@ -3,8 +3,9 @@ Changes
 MANIFEST
 Makefile.PL
 lib/Class/Multimethods.pm
-doc/Class/Multimethods.pod
+lib/Class/Multimethods.pod
 t/multimethods.t
+tutorial.html
 demo/demo.ambig.pl
 demo/demo.analyse.pl
 demo/demo.global.pl

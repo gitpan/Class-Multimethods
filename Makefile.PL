@@ -2,5 +2,5 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
 		NAME	=> 'Class::Multimethods',
-		VERSION => '1.69',
+		VERSION => '1.70',
 	     );

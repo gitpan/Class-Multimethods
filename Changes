@@ -47,3 +47,9 @@ Revision history for Perl extension Class::Multimethods.
 
 	- moved demos to demo subdirectory
 
+
+1.70	Sun Apr  9 12:43:55 2000
+
+	- moved .pod file to installable directory (/lib)
+
+	- Added TPC3 paper as tutorial.html (thanks Tom)

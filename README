@@ -1,8 +1,7 @@
 ==============================================================================
-                Release of version 1.69 of Class::Multimethods
+                Release of version 1.70 of Class::Multimethods
 ==============================================================================
 
-DESCRIPTION
 
 NAME
 	Class::Multimethods - Support multimethods and subroutine
@@ -94,20 +93,19 @@ AUTHOR
 
 COPYRIGHT
 
-       Copyright (c) 1999, Damian Conway. All Rights Reserved.
+       Copyright (c) 1999-2000, Damian Conway. All Rights Reserved.
      This module is free software. It may be used, redistributed
          and/or modified under the same terms as Perl itself.
 
 
 ==============================================================================
 
-CHANGES IN VERSION 1.69
+CHANGES IN VERSION 1.70
 
 
-	- Fixed absolute path snafu in MANIFEST (thanks Gareth and Michael)
+	- moved .pod file to installable directory (/lib)
 
-	- moved demos to demo subdirectory
-
+	- Added TPC3 paper as tutorial.html (thanks Tom)
 
 
 ==============================================================================
